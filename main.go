@@ -1,14 +1,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
+/*
+███████╗██╗███╗   ██╗██████╗      █████╗ ███╗   ██╗██████╗     ██████╗ ███████╗██████╗ ██╗      █████╗  ██████╗███████╗
+██╔════╝██║████╗  ██║██╔══██╗    ██╔══██╗████╗  ██║██╔══██╗    ██╔══██╗██╔════╝██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝
+█████╗  ██║██╔██╗ ██║██║  ██║    ███████║██╔██╗ ██║██║  ██║    ██████╔╝█████╗  ██████╔╝██║     ███████║██║     █████╗
+██╔══╝  ██║██║╚██╗██║██║  ██║    ██╔══██║██║╚██╗██║██║  ██║    ██╔══██╗██╔══╝  ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝
+██║     ██║██║ ╚████║██████╔╝    ██║  ██║██║ ╚████║██████╔╝    ██║  ██║███████╗██║     ███████╗██║  ██║╚██████╗███████╗
+╚═╝     ╚═╝╚═╝  ╚═══╝╚═════╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝
+*/
+
+/*
+██████╗ ███████╗██████╗ ██╗      █████╗  ██████╗███████╗        ██████╗  █████╗ ██████╗  █████╗ ███╗   ███╗
+██╔══██╗██╔════╝██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝        ██╔══██╗██╔══██╗██╔══██╗██╔══██╗████╗ ████║
+██████╔╝█████╗  ██████╔╝██║     ███████║██║     █████╗          ██████╔╝███████║██████╔╝███████║██╔████╔██║
+██╔══██╗██╔══╝  ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝          ██╔═══╝ ██╔══██║██╔══██╗██╔══██║██║╚██╔╝██║
+██║  ██║███████╗██║     ███████╗██║  ██║╚██████╗███████╗        ██║     ██║  ██║██║  ██║██║  ██║██║ ╚═╝ ██║
+╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝        ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝
+*/
+
+//ReplaceParam is the data to be processed is the hosting structure
 type ReplaceParam struct {
 	SourceName string
 	TargetName string
@@ -17,73 +36,119 @@ type ReplaceParam struct {
 	InDir      bool
 }
 
+var (
+	path       = ""
+	sourceName = ""
+	targetName = ""
+	inFile     = false
+	inDir      = false
+)
+
+/*
+██╗███╗   ██╗██╗████████╗
+██║████╗  ██║██║╚══██╔══╝
+██║██╔██╗ ██║██║   ██║
+██║██║╚██╗██║██║   ██║
+██║██║ ╚████║██║   ██║
+╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝
+*/
+
+func init() {
+
+	_path := flag.String("path", "", "The `path` param is changed in the"+
+		" \nfile in the folder or folder under the folder or in the file"+
+		" \ninside the folder."+
+		" \nFor example `/home/mert.acel/DEVELOPMENT/GIT/AOSP`\n")
+
+	_sourceName := flag.String("source", "", "Sourcename specifies the parameter to be"+
+		" \nsearched and changed on the specified path.\n")
+
+	_targetName := flag.String("target", "", "targetName is the name to be changed"+
+		" \nin the specified path and the name being searched.\n")
+
+	_inFile := flag.Bool("file", false, "If the file parameter is true, it searches for and modifies data in files."+
+		" \nAttention ! dir and file should not be the same and true or false.\n")
+
+	_inDir := flag.Bool("dir", false, "If the parameter is true, the folder names and filenames"+
+		" \nin the folder are searched and changed."+
+		" \nAttention ! dir and file should not be the same and true or false.\n")
+
+	flag.Parse()
+
+	if *_path != "" || *_targetName != "" || _inDir == _inFile {
+		defaultError()
+	}
+
+	path = *_path
+	sourceName = *_sourceName
+	targetName = *_targetName
+	inFile = *_inFile
+	inDir = *_inDir
+
+}
+
+/*
+███╗   ███╗ █████╗ ██╗███╗   ██╗
+████╗ ████║██╔══██╗██║████╗  ██║
+██╔████╔██║███████║██║██╔██╗ ██║
+██║╚██╔╝██║██╔══██║██║██║╚██╗██║
+██║ ╚═╝ ██║██║  ██║██║██║ ╚████║
+╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+*/
+
 func main() {
 	var r ReplaceParam
-	args := os.Args
 
-	if len(args) < 5 {
-		fmt.Println("Please Control Param")
-		fmt.Println("Example : ")
-		fmt.Println("./Recursive_Finder /your/find/path source_name target_name in_file in_directory")
-		fmt.Println("./Recursive_Finder /home/mert.acel/DEVELOPMENT/GIT/AOSP test Acel true false")
-		return
-	}
-	fileBool, _ := strconv.ParseBool(args[4])
-	dirBool, _ := strconv.ParseBool(args[5])
-
-	if fileBool == dirBool {
-		fmt.Println("./Recursive_Finder /your/find/path source_name target_name in_file in_directory")
-		fmt.Println("Not Equal target_name in_file in_directory")
-		return
-	}
-
-	r.MainPath = args[1]
-	r.SourceName = args[2]
-	r.TargetName = args[3]
-	r.InFile = fileBool
-	r.InDir = dirBool
-
-	/*r.MainPath = "/home/mert.acel/DEVELOPMENT/GIT/AOSP/KHADAS"
-	r.SourceName = "test"
-	r.TargetName = "acel1"
-	r.InFile = false
-	r.InDir = true*/
+	r.MainPath = path
+	r.SourceName = sourceName
+	r.TargetName = targetName
+	r.InFile = inFile
+	r.InDir = inDir
 
 	r.WalkinPath()
 }
 
-var folderSize int
+/*
+██╗    ██╗ █████╗ ██╗     ██╗  ██╗██╗███╗   ██╗        ██████╗  █████╗ ████████╗██╗  ██╗
+██║    ██║██╔══██╗██║     ██║ ██╔╝██║████╗  ██║        ██╔══██╗██╔══██╗╚══██╔══╝██║  ██║
+██║ █╗ ██║███████║██║     █████╔╝ ██║██╔██╗ ██║        ██████╔╝███████║   ██║   ███████║
+██║███╗██║██╔══██║██║     ██╔═██╗ ██║██║╚██╗██║        ██╔═══╝ ██╔══██║   ██║   ██╔══██║
+╚███╔███╔╝██║  ██║███████╗██║  ██╗██║██║ ╚████║        ██║     ██║  ██║   ██║   ██║  ██║
+ ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝        ╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+*/
 
+//WalkinPath is function to navigate through the folder
 func (r ReplaceParam) WalkinPath() {
+	var folderSize int
 	targetDir := r.MainPath
 
-	filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
 		beginFolder, lastFolder := filepath.Split(path)
-
-		if r.InDir {
-			if strings.Contains(lastFolder, r.SourceName) {
-				fmt.Println(beginFolder, "-", lastFolder)
-				if !info.IsDir() {
-					os.Rename(path, beginFolder+strings.Replace(lastFolder, r.SourceName, r.TargetName, -1))
-				} else {
-					folderSize++
+		if lastFolder != ".git" {
+			if r.InDir {
+				if strings.Contains(lastFolder, r.SourceName) {
+					fmt.Println(beginFolder, "-", lastFolder)
+					if !info.IsDir() {
+						os.Rename(path, beginFolder+strings.Replace(lastFolder, r.SourceName, r.TargetName, -1))
+					} else {
+						folderSize++
+					}
 				}
 			}
-		}
 
-		if lastFolder != ".git" {
 			if !info.IsDir() {
 				if r.InFile {
-					r.replaceFile(path)
+					r.replaceInFile(path)
 				}
 			}
 		}
 		return nil
 	})
+	errorHandler(err)
 
 	fmt.Println("Folder Size : ", folderSize)
 	for i := 0; i < folderSize; i++ {
-		filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+		errFolder := filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
 			beginFolder, lastFolder := filepath.Split(path)
 			if info.IsDir() {
 				if strings.Contains(lastFolder, r.SourceName) {
@@ -98,10 +163,21 @@ func (r ReplaceParam) WalkinPath() {
 			}
 			return nil
 		})
+		errorHandler(errFolder)
 	}
 }
 
-func (r ReplaceParam) replaceFile(path string) {
+/*
+██████╗ ███████╗██████╗ ██╗      █████╗  ██████╗███████╗        ███████╗██╗██╗     ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝        ██╔════╝██║██║     ██╔════╝
+██████╔╝█████╗  ██████╔╝██║     ███████║██║     █████╗          █████╗  ██║██║     █████╗
+██╔══██╗██╔══╝  ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝          ██╔══╝  ██║██║     ██╔══╝
+██║  ██║███████╗██║     ███████╗██║  ██║╚██████╗███████╗        ██║     ██║███████╗███████╗
+╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝        ╚═╝     ╚═╝╚══════╝╚══════╝
+*/
+
+//replaceFile is change specified parameter in a file
+func (r ReplaceParam) replaceInFile(path string) {
 	read, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
@@ -115,5 +191,42 @@ func (r ReplaceParam) replaceFile(path string) {
 		if err != nil {
 			panic(err)
 		}
+	}
+}
+
+/*
+██████╗ ███████╗███████╗ █████╗ ██╗   ██╗██╗  ████████╗        ███████╗██████╗ ██████╗  ██████╗ ██████╗
+██╔══██╗██╔════╝██╔════╝██╔══██╗██║   ██║██║  ╚══██╔══╝        ██╔════╝██╔══██╗██╔══██╗██╔═══██╗██╔══██╗
+██║  ██║█████╗  █████╗  ███████║██║   ██║██║     ██║           █████╗  ██████╔╝██████╔╝██║   ██║██████╔╝
+██║  ██║██╔══╝  ██╔══╝  ██╔══██║██║   ██║██║     ██║           ██╔══╝  ██╔══██╗██╔══██╗██║   ██║██╔══██╗
+██████╔╝███████╗██║     ██║  ██║╚██████╔╝███████╗██║           ███████╗██║  ██║██║  ██║╚██████╔╝██║  ██║
+╚═════╝ ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝           ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝
+*/
+// defaultError is contains the data to be written to the screen in case of an error
+func defaultError() {
+	fmt.Printf("Please Control Param\n\n")
+	fmt.Printf("For Help -help \n\n")
+	fmt.Printf("Example : \n\n")
+	fmt.Printf("./Recursive_Finder /your/find/path source_name target_name in_file in_directory\n")
+	fmt.Printf("./Recursive_Finder /home/mert.acel/DEVELOPMENT/GIT/AOSP test Acel true false\n\n")
+
+	fmt.Printf("Params : \n\n")
+	flag.PrintDefaults()
+	os.Exit(1)
+}
+
+/*
+███████╗██████╗ ██████╗  ██████╗ ██████╗         ██╗  ██╗ █████╗ ███╗   ██╗██████╗ ██╗     ███████╗██████╗
+██╔════╝██╔══██╗██╔══██╗██╔═══██╗██╔══██╗        ██║  ██║██╔══██╗████╗  ██║██╔══██╗██║     ██╔════╝██╔══██╗
+█████╗  ██████╔╝██████╔╝██║   ██║██████╔╝        ███████║███████║██╔██╗ ██║██║  ██║██║     █████╗  ██████╔╝
+██╔══╝  ██╔══██╗██╔══██╗██║   ██║██╔══██╗        ██╔══██║██╔══██║██║╚██╗██║██║  ██║██║     ██╔══╝  ██╔══██╗
+███████╗██║  ██║██║  ██║╚██████╔╝██║  ██║        ██║  ██║██║  ██║██║ ╚████║██████╔╝███████╗███████╗██║  ██║
+╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝
+*/
+// errorHandler is the operation to be performed when an error occurs
+func errorHandler(err error) {
+	if err != nil {
+		defaultError()
+		os.Exit(3)
 	}
 }
