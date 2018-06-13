@@ -75,7 +75,7 @@ func init() {
 
 	flag.Parse()
 
-	if *_path != "" || *_targetName != "" || _inDir == _inFile {
+	if *_path == "" || *_targetName == "" || *_inDir == *_inFile || len(os.Args) < 2 {
 		defaultError()
 	}
 
