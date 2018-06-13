@@ -129,6 +129,10 @@ func (r ReplaceParam) WalkinPath() {
 	targetDir := r.MainPath
 
 	err := filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
 		beginFolder, lastFolder := filepath.Split(path)
 		if lastFolder != ".git" {
 			if r.InDir {
@@ -155,6 +159,11 @@ func (r ReplaceParam) WalkinPath() {
 	fmt.Println("Folder Size : ", folderSize)
 	for i := 0; i < folderSize; i++ {
 		errFolder := filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+
+			if err != nil {
+				return nil
+			}
+
 			beginFolder, lastFolder := filepath.Split(path)
 			if info.IsDir() {
 				if strings.Contains(lastFolder, r.SourceName) {
