@@ -74,6 +74,12 @@ func init() {
 		" \nAttention ! dir and file should not be the same and true or false.\n")
 
 	flag.Parse()
+	fmt.Println("Get Param : ")
+	fmt.Println("Path : ", *_path)
+	fmt.Println("Source Name : ", *_sourceName)
+	fmt.Println("Target Name : ", *_targetName)
+	fmt.Println("Dir: ", *_inDir)
+	fmt.Println("File : ", *_inFile)
 
 	if *_path == "" || *_targetName == "" || *_inDir == *_inFile || len(os.Args) < 2 {
 		defaultError()
@@ -207,8 +213,8 @@ func defaultError() {
 	fmt.Printf("Please Control Param\n\n")
 	fmt.Printf("For Help -help \n\n")
 	fmt.Printf("Example : \n\n")
-	fmt.Printf("./FinderAndChanger /your/find/path source_name target_name in_file in_directory\n")
-	fmt.Printf("./FinderAndChanger /home/mert.acel/DEVELOPMENT/GIT/AOSP test Acel true false\n\n")
+	fmt.Printf("./FinderAndChanger -path/your/find/path -source=source_name  -target=target_name -file=in_file -dir=in_directory\n")
+	fmt.Printf("./FinderAndChanger -path=/home/mert.acel/DEVELOPMENT/GIT/AOS -source=Test -target=Acel -file=true -dir=false\n\n")
 
 	fmt.Printf("Params : \n\n")
 	flag.PrintDefaults()
